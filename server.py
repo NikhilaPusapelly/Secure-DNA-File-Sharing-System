@@ -12,6 +12,7 @@ from aes_utils import AESCipher
 from dna_crypto import DNACrypto
 from ipfs_utils import IPFSClient
 from blockchain import BlockchainManager
+from blockchain_simulator import BlockchainSimulator
 import config
 
 app = Flask(__name__)
@@ -27,24 +28,27 @@ def initialize_blockchain():
     """Initialize blockchain manager and deploy contract if needed"""
     global blockchain_manager
     try:
-        blockchain_manager = BlockchainManager()
+        real_blockchain = BlockchainManager()
         
-        if blockchain_manager.is_connected():
-            print("✓ Connected to blockchain")
+        if real_blockchain.is_connected():
+            print("✓ Connected to real Ethereum blockchain")
             
-            if not blockchain_manager.contract_address:
+            if not real_blockchain.contract_address:
                 print("Deploying smart contract...")
-                blockchain_manager.deploy_contract()
+                real_blockchain.deploy_contract()
                 print("✓ Contract deployed successfully")
             else:
-                print(f"✓ Using existing contract at {blockchain_manager.contract_address}")
+                print(f"✓ Using existing contract at {real_blockchain.contract_address}")
+            
+            blockchain_manager = real_blockchain
         else:
-            print("⚠ Blockchain not available - running in simulation mode")
-            blockchain_manager = None
+            print("⚠ Real blockchain not available - using local simulation mode")
+            blockchain_manager = BlockchainSimulator()
+            print("✓ Blockchain simulator initialized (perfect for local demo!)")
     except Exception as e:
         print(f"⚠ Blockchain initialization error: {e}")
-        print("Running without blockchain - simulation mode")
-        blockchain_manager = None
+        print("✓ Using blockchain simulator for local demonstration")
+        blockchain_manager = BlockchainSimulator()
 
 
 @app.route('/')
