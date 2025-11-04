@@ -13,6 +13,7 @@ class BlockchainSimulator:
     def __init__(self, storage_file='blockchain_storage.json'):
         self.storage_file = storage_file
         self.records = self._load_records()
+        self.contract_address = "0xSimulatedContract"
     
     def _load_records(self):
         """Load records from JSON file"""

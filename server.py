@@ -107,20 +107,20 @@ def upload_file():
         print(f"Uploaded to IPFS: {ipfs_hash}")
         
         if blockchain_manager and blockchain_manager.is_connected():
-            try:
-                tx_receipt = blockchain_manager.store_file_record(
-                    ipfs_hash,
-                    dna_encoded_key,
-                    filename
-                )
+            tx_receipt = blockchain_manager.store_file_record(
+                ipfs_hash,
+                dna_encoded_key,
+                filename
+            )
+            if hasattr(tx_receipt, 'transactionHash'):
                 blockchain_tx = tx_receipt.transactionHash.hex()
-                print(f"Stored on blockchain: {blockchain_tx}")
-            except Exception as e:
-                print(f"Blockchain storage error: {e}")
-                blockchain_tx = "simulation_mode"
+            elif isinstance(tx_receipt, dict) and 'transactionHash' in tx_receipt:
+                blockchain_tx = tx_receipt['transactionHash']
+            else:
+                blockchain_tx = str(tx_receipt)
+            print(f"Stored on blockchain: {blockchain_tx}")
         else:
-            blockchain_tx = "simulation_mode"
-            print("Blockchain not available - simulation mode")
+            return jsonify({'error': 'Blockchain not available - cannot store file record'}), 503
         
         return jsonify({
             'success': True,
