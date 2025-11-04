@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload File - Secure File Sharing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📤 Upload File</h1>
+            <a href="/" class="back-link">← Back to Home</a>
+        </header>
+
+        <div class="upload-section">
+            <div class="card">
+                <h2>Select File to Upload</h2>
+                <p class="info">Your file will be encrypted with AES-256, the encryption key will be encoded into DNA sequences, and stored securely on IPFS with blockchain verification.</p>
+                
+                <form id="uploadForm">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" name="file" required>
+                        <label for="fileInput" class="file-label">
+                            <span id="fileName">Choose a file...</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        🔐 Encrypt & Upload
+                    </button>
+                </form>
+            </div>
+
+            <div id="progressSection" class="card" style="display: none;">
+                <h3>Upload Progress</h3>
+                <div class="progress-steps">
+                    <div class="step" id="step1">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Encrypting with AES-256...</span>
+                    </div>
+                    <div class="step" id="step2">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Encoding key to DNA...</span>
+                    </div>
+                    <div class="step" id="step3">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Uploading to IPFS...</span>
+                    </div>
+                    <div class="step" id="step4">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Recording on blockchain...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="resultSection" class="card" style="display: none;">
+                <h3>✓ Upload Successful!</h3>
+                <div class="result-info">
+                    <div class="result-item">
+                        <strong>Filename:</strong>
+                        <span id="resultFilename"></span>
+                    </div>
+                    <div class="result-item">
+                        <strong>IPFS Hash:</strong>
+                        <code id="resultIpfsHash"></code>
+                    </div>
+                    <div class="result-item">
+                        <strong>DNA Encoded Key:</strong>
+                        <code id="resultDnaKey"></code>
+                    </div>
+                    <div class="result-item">
+                        <strong>Blockchain Transaction:</strong>
+                        <code id="resultBlockchainTx"></code>
+                    </div>
+                    <div class="result-item">
+                        <strong>Original Size:</strong>
+                        <span id="resultFileSize"></span>
+                    </div>
+                    <div class="result-item">
+                        <strong>Encrypted Size:</strong>
+                        <span id="resultEncryptedSize"></span>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <button onclick="copyIpfsHash()" class="btn btn-secondary">Copy IPFS Hash</button>
+                    <a href="/download" class="btn btn-primary">Download Files</a>
+                </div>
+            </div>
+
+            <div id="errorSection" class="card error-card" style="display: none;">
+                <h3>❌ Upload Failed</h3>
+                <p id="errorMessage"></p>
+                <button onclick="resetForm()" class="btn btn-secondary">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const uploadForm = document.getElementById('uploadForm');
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+            }
+        });
+        
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            
+            updateStep(1, '🔄', 'Encrypting with AES-256...');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                setTimeout(() => updateStep(2, '🔄', 'Encoding key to DNA...'), 500);
+                setTimeout(() => updateStep(3, '🔄', 'Uploading to IPFS...'), 1000);
+                setTimeout(() => updateStep(4, '🔄', 'Recording on blockchain...'), 1500);
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    updateStep(1, '✓', 'Encrypted with AES-256');
+                    updateStep(2, '✓', 'Key encoded to DNA');
+                    updateStep(3, '✓', 'Uploaded to IPFS');
+                    updateStep(4, '✓', 'Recorded on blockchain');
+                    
+                    document.getElementById('resultFilename').textContent = data.filename;
+                    document.getElementById('resultIpfsHash').textContent = data.ipfs_hash;
+                    document.getElementById('resultDnaKey').textContent = data.dna_key;
+                    document.getElementById('resultBlockchainTx').textContent = data.blockchain_tx;
+                    document.getElementById('resultFileSize').textContent = formatBytes(data.file_size);
+                    document.getElementById('resultEncryptedSize').textContent = formatBytes(data.encrypted_size);
+                    
+                    setTimeout(() => {
+                        document.getElementById('progressSection').style.display = 'none';
+                        document.getElementById('resultSection').style.display = 'block';
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                document.getElementById('errorMessage').textContent = error.message;
+                document.getElementById('progressSection').style.display = 'none';
+                document.getElementById('errorSection').style.display = 'block';
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        });
+        
+        function updateStep(stepNum, icon, text) {
+            const step = document.getElementById(`step${stepNum}`);
+            step.querySelector('.step-icon').textContent = icon;
+            step.querySelector('.step-text').textContent = text;
+            if (icon === '✓') {
+                step.classList.add('completed');
+            }
+        }
+        
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+        
+        function copyIpfsHash() {
+            const hash = document.getElementById('resultIpfsHash').textContent;
+            navigator.clipboard.writeText(hash).then(() => {
+                alert('IPFS hash copied to clipboard!');
+            });
+        }
+        
+        function resetForm() {
+            uploadForm.reset();
+            fileName.textContent = 'Choose a file...';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

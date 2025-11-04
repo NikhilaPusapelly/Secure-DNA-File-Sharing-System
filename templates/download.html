@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download File - Secure File Sharing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📥 Download File</h1>
+            <a href="/" class="back-link">← Back to Home</a>
+        </header>
+
+        <div class="download-section">
+            <div class="card">
+                <h2>Retrieve File by IPFS Hash</h2>
+                <p class="info">Enter the IPFS hash to retrieve and decrypt your file. The DNA-encoded key will be retrieved from the blockchain.</p>
+                
+                <form id="downloadForm">
+                    <div class="form-group">
+                        <label for="ipfsHash">IPFS Hash:</label>
+                        <input type="text" id="ipfsHash" name="ipfs_hash" placeholder="QmX..." required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="downloadBtn">
+                        🔓 Retrieve & Decrypt
+                    </button>
+                </form>
+            </div>
+
+            <div id="progressSection" class="card" style="display: none;">
+                <h3>Download Progress</h3>
+                <div class="progress-steps">
+                    <div class="step" id="step1">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Retrieving from blockchain...</span>
+                    </div>
+                    <div class="step" id="step2">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Decoding DNA key...</span>
+                    </div>
+                    <div class="step" id="step3">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Downloading from IPFS...</span>
+                    </div>
+                    <div class="step" id="step4">
+                        <span class="step-icon">⏳</span>
+                        <span class="step-text">Decrypting file...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="resultSection" class="card" style="display: none;">
+                <h3>✓ Download Successful!</h3>
+                <div class="result-info">
+                    <div class="result-item">
+                        <strong>Filename:</strong>
+                        <span id="resultFilename"></span>
+                    </div>
+                    <div class="result-item">
+                        <strong>File Size:</strong>
+                        <span id="resultFileSize"></span>
+                    </div>
+                    <div class="result-item">
+                        <strong>Saved to:</strong>
+                        <code id="resultPath"></code>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <button onclick="downloadAnother()" class="btn btn-secondary">Download Another</button>
+                    <a href="/upload" class="btn btn-primary">Upload New File</a>
+                </div>
+            </div>
+
+            <div id="errorSection" class="card error-card" style="display: none;">
+                <h3>❌ Download Failed</h3>
+                <p id="errorMessage"></p>
+                <button onclick="resetForm()" class="btn btn-secondary">Try Again</button>
+            </div>
+
+            <div class="card">
+                <h3>Available Files</h3>
+                <button onclick="loadFileList()" class="btn btn-secondary">
+                    🔄 Refresh File List
+                </button>
+                <div id="fileList" class="file-list">
+                    <p>Click "Refresh File List" to load available files...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const downloadForm = document.getElementById('downloadForm');
+        const ipfsHashInput = document.getElementById('ipfsHash');
+        
+        downloadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const ipfsHash = ipfsHashInput.value.trim();
+            if (!ipfsHash) {
+                alert('Please enter an IPFS hash');
+                return;
+            }
+            
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            
+            updateStep(1, '🔄', 'Retrieving from blockchain...');
+            
+            try {
+                setTimeout(() => updateStep(2, '🔄', 'Decoding DNA key...'), 500);
+                setTimeout(() => updateStep(3, '🔄', 'Downloading from IPFS...'), 1000);
+                setTimeout(() => updateStep(4, '🔄', 'Decrypting file...'), 1500);
+                
+                const response = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ipfs_hash: ipfsHash })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    updateStep(1, '✓', 'Retrieved from blockchain');
+                    updateStep(2, '✓', 'DNA key decoded');
+                    updateStep(3, '✓', 'Downloaded from IPFS');
+                    updateStep(4, '✓', 'File decrypted');
+                    
+                    document.getElementById('resultFilename').textContent = data.filename;
+                    document.getElementById('resultFileSize').textContent = formatBytes(data.file_size);
+                    document.getElementById('resultPath').textContent = data.download_path;
+                    
+                    setTimeout(() => {
+                        document.getElementById('progressSection').style.display = 'none';
+                        document.getElementById('resultSection').style.display = 'block';
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Download failed');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                document.getElementById('errorMessage').textContent = error.message;
+                document.getElementById('progressSection').style.display = 'none';
+                document.getElementById('errorSection').style.display = 'block';
+            } finally {
+                document.getElementById('downloadBtn').disabled = false;
+            }
+        });
+        
+        async function loadFileList() {
+            const fileListEl = document.getElementById('fileList');
+            fileListEl.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/files');
+                const data = await response.json();
+                
+                if (response.ok && data.files.length > 0) {
+                    let html = '<table class="file-table"><thead><tr><th>Filename</th><th>IPFS Hash</th><th>Action</th></tr></thead><tbody>';
+                    
+                    data.files.forEach(file => {
+                        html += `
+                            <tr>
+                                <td>${file.filename}</td>
+                                <td><code>${file.ipfs_hash.substring(0, 20)}...</code></td>
+                                <td><button onclick="selectFile('${file.ipfs_hash}')" class="btn-small">Select</button></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table>';
+                    fileListEl.innerHTML = html;
+                } else if (data.files.length === 0) {
+                    fileListEl.innerHTML = '<p>No files found on blockchain.</p>';
+                } else {
+                    throw new Error(data.error || 'Failed to load files');
+                }
+            } catch (error) {
+                fileListEl.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        function selectFile(ipfsHash) {
+            ipfsHashInput.value = ipfsHash;
+            ipfsHashInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        function updateStep(stepNum, icon, text) {
+            const step = document.getElementById(`step${stepNum}`);
+            step.querySelector('.step-icon').textContent = icon;
+            step.querySelector('.step-text').textContent = text;
+            if (icon === '✓') {
+                step.classList.add('completed');
+            }
+        }
+        
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+        
+        function downloadAnother() {
+            resetForm();
+        }
+        
+        function resetForm() {
+            downloadForm.reset();
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
