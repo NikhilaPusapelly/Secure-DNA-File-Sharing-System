@@ -33,6 +33,22 @@ A complete secure file sharing system that combines multiple layers of security:
 3. DNA sequence is decoded to AES key
 4. Encrypted file is downloaded from IPFS
 5. File is decrypted and saved locally
+   
+
+## Screenshots
+### Home Page
+<img width="1920" height="1080" alt="Home" src="https://github.com/user-attachments/assets/596b672d-c3f5-4093-9d65-0d824409da55" />
+
+
+### Upload File
+<img width="1920" height="1080" alt="upload" src="https://github.com/user-attachments/assets/7940103f-fa55-4b47-9670-1ecd89cba195" />
+
+
+### Upload Success
+<img width="1920" height="1080" alt="upload_success" src="https://github.com/user-attachments/assets/45117022-5431-43ce-8772-afcb2d584f17" />
+
+### Download File
+<img width="1920" height="1080" alt="download" src="https://github.com/user-attachments/assets/8420da94-f95a-42f3-acd9-37cbbb93f6b7" />
 
 ## Project Structure
 
