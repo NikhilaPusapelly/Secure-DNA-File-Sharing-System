@@ -131,8 +131,6 @@ MIT License
 
 ## Author
 
-Author
-
 Nikhila Pusapelly  
 B.Tech Computer Science (Cyber Security)
 
