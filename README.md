@@ -1,6 +1,6 @@
-# Secure File Sharing System
+# 🔐 Secure DNA File Sharing System
 
-## Blockchain & DNA Cryptography
+A secure file sharing platform that combines **AES-256 encryption, DNA cryptography, IPFS decentralized storage, and blockchain verification** to protect and validate file transfers.
 
 A complete secure file sharing system that combines multiple layers of security:
 - **AES-256 Encryption** for file protection
@@ -131,4 +131,9 @@ MIT License
 
 ## Author
 
-Built with Replit Agent
+Author
+
+Nikhila Pusapelly  
+B.Tech Computer Science (Cyber Security)
+
+GitHub: https://github.com/NikhilaPusapelly
