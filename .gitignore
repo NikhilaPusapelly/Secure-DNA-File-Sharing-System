@@ -38,3 +38,4 @@ ipfs_storage/
 contract_abi.json
 
 node_modules/
+.local/
